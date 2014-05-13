@@ -43,6 +43,7 @@ import java.util.List;
 
 /**
  * ListView whose items can be reordered by drag and drop.
+ * Copied and adapted from http://www.youtube.com/watch?v=_BZIvjMgH-Q
  */
 public class DragAndDropListView extends ListView {
     private static final String TAG = "DraggableListView";
