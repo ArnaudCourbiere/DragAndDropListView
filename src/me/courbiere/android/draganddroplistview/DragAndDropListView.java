@@ -47,7 +47,7 @@ import java.util.List;
  * <a href="http://www.youtube.com/watch?v=_BZIvjMgH-Q">DevBytes: ListView Cell Dragging and Rearranging</a>
  */
 public class DragAndDropListView extends ListView {
-    private static final String TAG = "DraggableListView";
+    private static final String TAG = "DragAndDropListView";
 
     private static final int SMOOTH_SCROLL_AMOUNT_AT_EDGE = 45;
     private static final int MOVE_DURATION = 150;
@@ -84,6 +84,7 @@ public class DragAndDropListView extends ListView {
 
     private CompositeOnItemLongClickListener mCompositeOnItemLongClickListener;
     private OnItemDroppedListener mOnItemDroppedListener;
+    private OnItemSwappedListener mOnItemSwappedListener;
 
     public DragAndDropListView(Context context) {
         super(context);
@@ -111,7 +112,7 @@ public class DragAndDropListView extends ListView {
     }
 
     /**
-     * Add a callback to be invoked when an item in this DraggableListView has
+     * Add a callback to be invoked when an item in this DragAndDropListView has
      * been clicked and held.
      *
      * @param listener The callback to add.
@@ -122,7 +123,7 @@ public class DragAndDropListView extends ListView {
 
     /**
      * Remove a callback from the list of callbacks to be invoked when an item in this
-     * DraggableListView has been clicked and held.
+     * DragAndDropListView has been clicked and held.
      *
      * @param listener The callback to remove.
      */
@@ -131,13 +132,23 @@ public class DragAndDropListView extends ListView {
     }
 
     /**
-     * Register a callback to be invoked when an item in this DraggableListView has been
+     * Register a callback to be invoked when an item in this DragAndDropListView has been
      * dropped after being dragged.
      *
-     * @param listener The callback to add.
+     * @param listener The callback to register.
      */
     public void setOnItemDroppedListener(OnItemDroppedListener listener) {
         mOnItemDroppedListener = listener;
+    }
+
+    /**
+     * Register a callback to be invoked when an item in thie DragAndDropListView has been
+     * swapped with another one due to a drag operation.
+     *
+     * @param listener The callback to register.
+     */
+    public void setOnItemSwappedListener(OnItemSwappedListener listener) {
+        mOnItemSwappedListener = listener;
     }
 
     @Override
@@ -400,7 +411,8 @@ public class DragAndDropListView extends ListView {
 
             final long switchItemID = isBelow ? mBelowItemId : mAboveItemId;
             View switchView = isBelow ? belowView : aboveView;
-            final int originalItem = getPositionForView(mobileView);
+            final int originalItemPosition = getPositionForView(mobileView);
+            final int switchViewPosition = getPositionForView(switchView);
 
             if (switchView == null) {
                 updateNeighborViewsForID(mMobileItemId);
@@ -409,7 +421,12 @@ public class DragAndDropListView extends ListView {
 
             SortableSimpleCursorAdapter adapter = (SortableSimpleCursorAdapter) getAdapter();
 
-            adapter.swap(originalItem, getPositionForView(switchView));
+            adapter.swap(originalItemPosition, switchViewPosition);
+
+            if (mOnItemSwappedListener != null) {
+
+                mOnItemSwappedListener.onItemSwapped(originalItemPosition, switchViewPosition, this, mobileView);
+            }
 
             // Force the ListView to layout children right away (prevents flicker when switching).
             layoutChildren();
@@ -716,7 +733,7 @@ public class DragAndDropListView extends ListView {
      */
     public interface OnItemDroppedListener {
         /**
-         * Callback method to be invoked when an item in this DraggableListView has been
+         * Callback method to be invoked when an item in this DragAndDropListView has been
          * dropped after being dragged.
          *
          * Implementers can call getItemAtPosition(from or to) if they need to access
@@ -724,15 +741,45 @@ public class DragAndDropListView extends ListView {
          * Note: The callback is invoked after the item has been dropped and list re-organized. This
          * means that the item is already in the "to" position.
          *
+         * TODO: Should the callback be invoked if the item is drop in the same position it was initially?
+         *
          * @param from Item's initial position.
          * @param to Item's final position.
-         * @param listView The DraggableListView.
+         * @param listView The DragAndDropListView.
          * @param item The item that was dropped.
          */
         public void onItemDropped(int from, int to, DragAndDropListView listView, View item);
     }
 
+    /**
+     * Interface definition for a callback to be invoked when an item in this view has been swapped
+     * with another one due to a drag operation.
+     */
+    public interface OnItemSwappedListener {
+        /**
+         * Callback method to be invoked when an item in this DragAndDropListView has been swapped
+         * with another one due to a drag operation.
+         *
+         * @param from The position the item is swapped from.
+         * @param to The position the itme is swapped to.
+         * @param listView The DragAndDropListView.
+         * @param item The item that was swapped.
+         */
+        public void onItemSwapped(int from, int to, DragAndDropListView listView, View item);
+    }
+
+    /**
+     * Interface definition that adapter set on this DragAndDropListView need to implement. The
+     * adaptor should take necessary action when this callback is invoked to swap the positions of
+     * the two items.
+     */
     public interface SortableAdapter {
+        /**
+         * Callback to be invoked when two items need to swapped in the adapter.
+         *
+         * @param from The position to swap from.
+         * @param to The position to swap to.
+         */
         void swap(int from, int to);
     }
 }
