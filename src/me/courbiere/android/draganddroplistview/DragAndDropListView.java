@@ -428,9 +428,6 @@ public class DragAndDropListView extends ListView {
                 mOnItemSwappedListener.onItemSwapped(originalItemPosition, switchViewPosition, this, mobileView);
             }
 
-            // Force the ListView to layout children right away (prevents flicker when switching).
-            layoutChildren();
-
             mDownY = mLastEventY;
 
             final int switchViewStartTop = switchView.getTop();
